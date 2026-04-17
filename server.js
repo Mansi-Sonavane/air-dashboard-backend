@@ -8,25 +8,49 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Import model
+const AirData = require("./models/AirData");
+
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected ✅"))
   .catch(err => console.log(err));
 
-// Import model
-const AirData = require("./models/AirData");
+// ------------------------
+// AUTO LIVE DATA OPTION 🔥
+// ------------------------
+function random(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-// Test route (basic)
+setInterval(async () => {
+  try {
+    const newData = new AirData({
+      aqi: random(70, 180),
+      temperature: random(22, 36),
+      humidity: random(35, 75),
+      time: new Date()
+    });
+
+    await newData.save();
+    console.log("New Live Data Saved ✅");
+  } catch (error) {
+    console.log(error);
+  }
+}, 5000); // every 5 sec
+
+// ------------------------
+// ROUTES
+// ------------------------
 app.get("/", (req, res) => {
   res.send("NEW SERVER RUNNING 🔥");
 });
 
-// FORCE TEST ROUTE ✅
 app.get("/test", (req, res) => {
   res.send("Test OK ✅");
 });
 
-// Save data API
+// Save data manually
 app.post("/api/data", async (req, res) => {
   try {
     const data = new AirData(req.body);
@@ -37,7 +61,7 @@ app.post("/api/data", async (req, res) => {
   }
 });
 
-// Get data API
+// Get all data
 app.get("/api/data", async (req, res) => {
   try {
     const data = await AirData.find();
@@ -47,6 +71,7 @@ app.get("/api/data", async (req, res) => {
   }
 });
 
+// ------------------------
 const PORT = 5000;
 
 app.listen(PORT, () => {
